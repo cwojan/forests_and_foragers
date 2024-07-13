@@ -1,0 +1,78 @@
+---
+title: "faf_game_model"
+format: html
+editor: visual
+---
+
+## Creating a Model of the Forests and Foragers Tabletop Game
+
+This document collects code intending to emulate the Forests and Foragers dice/card games as deployed at Bell Museum SciPride on 2024/06/29 in code for balancing purposes.
+
+## Setup
+
+```{r}
+library(tidyverse)
+```
+
+## First Steps
+
+It is probably sensible to build a set of lists (encounter cards, small mammals) and functions (card selector, choice selector, dice roller). Dice roller is a easy place to start.
+
+### Dice Roller ( + mammals)
+
+```{r}
+## create dice roller function
+
+## let's use sample as the base
+sample(x = 1:6, size = 1)
+
+## set variable nd as number of dice
+nd <- 1
+## set variable ds as dice sides (probably constant)
+ds <- 6
+
+## sample takes variables
+sample(x = 1:ds, size = nd)
+```
+
+Adding any more to sample makes little sense without the mammal player stats. Let's make a mammal list:
+
+```{r}
+## creating mammal list as data frame (tibble)
+mammals <- tibble(name = c("mouse", "shrew", "chipmunk"),
+                  forage = c(2,2,1),
+                  climb = c(2,1,2),
+                  dig = c(1,2,2),
+                  tick = rep(1,3),
+                  bonus_type = c("climb", "forage", "pred"),
+                  bonus_amt = c(1,2,1))
+
+## test filter/select
+test <- filter(mammals, name == "mouse") %>%
+  select(c("forage","climb","dig", "tick")) %>%
+  as.numeric()
+
+## test roll all dice, take max of multiple
+map_int(.x = test, .f = function(x){max(sample(1:6,x))})
+
+## now dice rolling function that uses sample
+dice_roll <- function(player, player_stats, dice_types = c("forage","climb","dig", "tick")){
+  player_dice <- filter(player_stats, name == player) %>%
+    select(all_of(dice_types)) %>%
+    as.numeric()
+  rolls <- map_int(.x = test, .f = function(x){max(sample(1:6,x))})
+  names(rolls) <- dice_types
+  return(rolls)
+}
+
+## test function
+dice_roll(player = "mouse", player_stats = mammals)
+
+## nice
+```
+
+Now to make the dice roller apply to a card...
+
+### Card Selector + Cards
+
+Start with a subset of cards that vary in dice types required. How to structure?
